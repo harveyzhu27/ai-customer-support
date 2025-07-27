@@ -14,6 +14,91 @@ const HeadstarterAssistant: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [status, setStatus] = useState<'ready' | 'connecting' | 'connected'>('ready');
   const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [lastMessage, setLastMessage] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [userTranscript, setUserTranscript] = useState('');
+  const [assistantTranscript, setAssistantTranscript] = useState('');
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [vapiInitialized, setVapiInitialized] = useState(false);
+  
+  // Client-side Vapi integration using Web SDK
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
+    const initVapi = async () => {
+      try {
+        // Import Vapi Web SDK
+        const Vapi = (await import('@vapi-ai/web')).default;
+        
+        // Initialize Vapi with your configuration
+        const vapi = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY || '');
+        
+        // Set up event listeners
+        vapi.on('call-start', () => {
+          setIsListening(true);
+          setStatus('connected');
+          setConnectionStatus('connected');
+          setIsCallActive(true);
+          setUserTranscript('');
+          setAssistantTranscript('');
+          setLastMessage('');
+          console.log('🎤 Call started');
+        });
+        
+        vapi.on('call-end', () => {
+          setIsListening(false);
+          setStatus('ready');
+          setConnectionStatus('disconnected');
+          setIsCallActive(false);
+          console.log('📞 Call ended');
+        });
+        
+        vapi.on('speech-start', () => {
+          setIsSpeaking(true);
+        });
+        
+        vapi.on('speech-end', () => {
+          setIsSpeaking(false);
+        });
+        
+        vapi.on('message', (message: any) => {
+          if (message.role === 'user') {
+            setUserTranscript(message.content);
+            setTranscript(message.content);
+          } else if (message.role === 'assistant') {
+            setAssistantTranscript(message.content);
+            setLastMessage(message.content);
+          }
+        });
+        
+        vapi.on('error', (error: any) => {
+          console.error('Vapi error:', error);
+          setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
+          setStatus('ready');
+          setConnectionStatus('disconnected');
+          setIsListening(false);
+          setIsCallActive(false);
+        });
+        
+        // Store Vapi instance globally for use in handleCall
+        (window as any).vapi = vapi;
+        setVapiInitialized(true);
+        
+        console.log('✅ Vapi Web SDK initialized successfully');
+        
+      } catch (error) {
+        console.error('Failed to initialize Vapi:', error);
+        setLastMessage("Failed to initialize voice functionality. Please check your Vapi configuration.");
+      }
+    };
+    
+    initVapi();
+  }, []);
 
   useEffect(() => {
     // Create floating particles
@@ -33,31 +118,43 @@ const HeadstarterAssistant: React.FC = () => {
     setParticles(newParticles);
   }, []);
 
-  const handleCall = () => {
+  const handleCall = async () => {
     setIsButtonClicked(true);
-    setStatus('connecting');
-
-    // Simulate connection process
-    setTimeout(() => {
-      setStatus('connected');
+    
+    try {
+      // Check if Vapi is available
+      if (typeof window === 'undefined' || !(window as any).vapi) {
+        setLastMessage("Voice functionality is not available. Please check your Vapi configuration.");
+        return;
+      }
       
-      // Show a simple alert for now (replace with your backend integration)
-      alert('Connected to Headstarter Assistant! 🚀\n\nThis is where you would integrate with your backend to start the call.');
+      const vapi = (window as any).vapi;
       
-      // Reset status after a delay
+      if (isCallActive) {
+        // End the call if it's active
+        vapi.stop();
+      } else {
+        // Start a new call with your assistant
+        await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '');
+      }
+    } catch (error) {
+      console.error('❌ Error with Vapi call:', error);
+      setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
+      setStatus('ready');
+    } finally {
+      // Remove click animation
       setTimeout(() => {
-        setStatus('ready');
-      }, 2000);
-    }, 1500);
-
-    // Remove click animation
-    setTimeout(() => {
-      setIsButtonClicked(false);
-    }, 600);
+        setIsButtonClicked(false);
+      }, 600);
+    }
   };
 
   const getStatusColor = () => {
-    switch (status) {
+    if (isCallActive) {
+      return 'bg-green-500 shadow-green-500/60';
+    }
+    
+    switch (connectionStatus) {
       case 'connecting':
         return 'bg-orange-500 shadow-orange-500/60';
       case 'connected':
@@ -115,24 +212,67 @@ const HeadstarterAssistant: React.FC = () => {
           </div>
 
           {/* Status */}
-          <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="flex items-center justify-center gap-2 mb-4">
             <div className={`w-2 h-2 rounded-full shadow-lg animate-pulse ${getStatusColor()}`} />
             <span className="text-white/80 text-sm font-medium">
-              {status}
+              {isCallActive ? 'connected' : connectionStatus}
             </span>
           </div>
+
+          {/* Voice Status */}
+          {!vapiInitialized && (
+            <div className="mb-4 p-3 bg-orange-400/10 rounded-lg border border-orange-400/20">
+              <div className="text-orange-400 text-sm font-medium mb-2">
+                ⚙️ Initializing Voice...
+              </div>
+              <div className="text-white/80 text-xs">
+                Setting up Vapi connection...
+              </div>
+            </div>
+          )}
+          
+          {isCallActive && (
+            <div className="mb-4 p-3 bg-cyan-400/10 rounded-lg border border-cyan-400/20">
+              <div className="text-cyan-400 text-sm font-medium mb-2">
+                🎤 {isSpeaking ? 'Assistant Speaking...' : 'Listening...'}
+              </div>
+              {userTranscript && (
+                <div className="text-white/80 text-xs mb-2">
+                  <strong>You:</strong> "{userTranscript}"
+                </div>
+              )}
+              {assistantTranscript && (
+                <div className="text-white/80 text-xs">
+                  <strong>Assistant:</strong> "{assistantTranscript}"
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Last Response */}
+          {lastMessage && (
+            <div className="mb-4 p-3 bg-green-400/10 rounded-lg border border-green-400/20">
+              <div className="text-green-400 text-sm font-medium mb-2">
+                💬 Response
+              </div>
+              <div className="text-white/80 text-xs">
+                {lastMessage}
+              </div>
+            </div>
+          )}
 
           {/* Call Button */}
           <button
             onClick={handleCall}
-            className={`w-full py-4 px-6 bg-gradient-to-br from-cyan-400 to-cyan-500 border-none rounded-2xl text-slate-900 text-lg font-bold cursor-pointer transition-all duration-300 relative overflow-hidden shadow-lg shadow-cyan-400/30 hover:shadow-xl hover:shadow-cyan-400/40 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:shadow-cyan-400/30 ${
-              isButtonClicked ? 'animate-pulse' : ''
+            disabled={isButtonClicked}
+            className={`w-full py-4 px-6 bg-gradient-to-br from-cyan-400 to-cyan-500 border-none rounded-2xl text-slate-900 text-lg font-bold cursor-pointer transition-all duration-300 relative overflow-hidden shadow-lg shadow-cyan-400/30 hover:shadow-xl hover:shadow-cyan-400/40 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:shadow-cyan-400/30 disabled:opacity-50 disabled:cursor-not-allowed ${
+              isCallActive ? 'animate-pulse' : ''
             }`}
           >
             {/* Button shine effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-500" />
             
-            Call Headstarter
+            {isCallActive ? '🎤 End Call' : vapiInitialized ? '🎤 Start Voice Call' : '🎤 Initializing...'}
           </button>
         </div>
       </div>

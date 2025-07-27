@@ -12,10 +12,8 @@ interface Particle {
 
 const HeadstarterAssistant: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [status, setStatus] = useState<'ready' | 'connecting' | 'connected'>('ready');
   const [isButtonClicked, setIsButtonClicked] = useState(false);
   const [lastMessage, setLastMessage] = useState('');
-  const [transcript, setTranscript] = useState('');
   const [userTranscript, setUserTranscript] = useState('');
   const [assistantTranscript, setAssistantTranscript] = useState('');
   const [isCallActive, setIsCallActive] = useState(false);
@@ -49,7 +47,6 @@ const HeadstarterAssistant: React.FC = () => {
         
         // Set up event listeners based on official documentation
         vapi.on('call-start', () => {
-          setStatus('connected');
           setConnectionStatus('connected');
           setIsCallActive(true);
           setUserTranscript('');
@@ -59,7 +56,6 @@ const HeadstarterAssistant: React.FC = () => {
         });
         
         vapi.on('call-end', () => {
-          setStatus('ready');
           setConnectionStatus('disconnected');
           setIsCallActive(false);
           console.log('📞 Call ended');
@@ -80,7 +76,6 @@ const HeadstarterAssistant: React.FC = () => {
           if (message.type === 'transcript') {
             if (message.role === 'user') {
               setUserTranscript(message.transcript);
-              setTranscript(message.transcript);
             } else if (message.role === 'assistant') {
               setAssistantTranscript(message.transcript);
               setLastMessage(message.transcript);
@@ -91,13 +86,12 @@ const HeadstarterAssistant: React.FC = () => {
         vapi.on('error', (error: unknown) => {
           console.error('Vapi error:', error);
           setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
-          setStatus('ready');
           setConnectionStatus('disconnected');
           setIsCallActive(false);
         });
         
         // Store Vapi instance globally for use in handleCall
-        (window as any).vapi = vapi;
+        (window as { vapi?: typeof vapi }).vapi = vapi;
         setVapiInitialized(true);
         
         console.log('✅ Vapi Web SDK initialized successfully');
@@ -134,12 +128,13 @@ const HeadstarterAssistant: React.FC = () => {
     
     try {
       // Check if Vapi is available
-      if (typeof window === 'undefined' || !(window as any).vapi) {
+      const globalWindow = window as typeof window & { vapi?: unknown };
+      if (typeof window === 'undefined' || !globalWindow.vapi) {
         setLastMessage("Voice functionality is not available. Please check your Vapi configuration.");
         return;
       }
       
-      const vapi = (window as any).vapi;
+      const vapi = globalWindow.vapi as { stop: () => void; start: (assistantId: string) => Promise<void> };
       
       // Check if assistant ID is configured
       const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
@@ -156,24 +151,22 @@ const HeadstarterAssistant: React.FC = () => {
         console.log('🎤 Starting call with assistant:', assistantId);
         await vapi.start(assistantId);
       }
-    } catch (error) {
-      console.error('❌ Error with Vapi call:', error);
-      
-      // Provide more specific error messages
-      if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          setLastMessage("Authentication failed. Please check your Vapi API key in .env.local");
-        } else if (error.message.includes('404')) {
-          setLastMessage("Assistant not found. Please check your assistant ID in .env.local");
+          } catch (error) {
+        console.error('❌ Error with Vapi call:', error);
+        
+        // Provide more specific error messages
+        if (error instanceof Error) {
+          if (error.message.includes('401')) {
+            setLastMessage("Authentication failed. Please check your Vapi API key in .env.local");
+          } else if (error.message.includes('404')) {
+            setLastMessage("Assistant not found. Please check your assistant ID in .env.local");
+          } else {
+            setLastMessage(`Connection error: ${error.message}`);
+          }
         } else {
-          setLastMessage(`Connection error: ${error.message}`);
+          setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
         }
-      } else {
-        setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
-      }
-      
-      setStatus('ready');
-    } finally {
+      } finally {
       // Remove click animation
       setTimeout(() => {
         setIsButtonClicked(false);
@@ -227,7 +220,7 @@ const HeadstarterAssistant: React.FC = () => {
           
           {/* Subtitle */}
           <p className="text-white/60 mb-12 font-normal">
-            Ask any questions about Headstarter to Scotty
+            Ask any questions about Aven to Suki
           </p>
 
           {/* Avatar */}

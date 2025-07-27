@@ -10,10 +10,9 @@ interface Particle {
   duration: string;
 }
 
-const HeadstarterAssistant: React.FC = () => {
+const AvenAssistant: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const [lastMessage, setLastMessage] = useState('');
   const [userTranscript, setUserTranscript] = useState('');
   const [assistantTranscript, setAssistantTranscript] = useState('');
   const [isCallActive, setIsCallActive] = useState(false);
@@ -51,7 +50,6 @@ const HeadstarterAssistant: React.FC = () => {
           setIsCallActive(true);
           setUserTranscript('');
           setAssistantTranscript('');
-          setLastMessage('');
           console.log('🎤 Call started');
         });
         
@@ -78,14 +76,12 @@ const HeadstarterAssistant: React.FC = () => {
               setUserTranscript(message.transcript);
             } else if (message.role === 'assistant') {
               setAssistantTranscript(message.transcript);
-              setLastMessage(message.transcript);
             }
           }
         });
         
         vapi.on('error', (error: unknown) => {
           console.error('Vapi error:', error);
-          setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
           setConnectionStatus('disconnected');
           setIsCallActive(false);
         });
@@ -98,7 +94,6 @@ const HeadstarterAssistant: React.FC = () => {
         
       } catch (error) {
         console.error('Failed to initialize Vapi:', error);
-        setLastMessage("Failed to initialize voice functionality. Please check your Vapi configuration.");
       }
     };
     
@@ -130,7 +125,6 @@ const HeadstarterAssistant: React.FC = () => {
       // Check if Vapi is available
       const globalWindow = window as typeof window & { vapi?: unknown };
       if (typeof window === 'undefined' || !globalWindow.vapi) {
-        setLastMessage("Voice functionality is not available. Please check your Vapi configuration.");
         return;
       }
       
@@ -139,7 +133,6 @@ const HeadstarterAssistant: React.FC = () => {
       // Check if assistant ID is configured
       const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
       if (!assistantId) {
-        setLastMessage("Assistant ID is not configured. Please check your .env.local file.");
         return;
       }
       
@@ -153,19 +146,6 @@ const HeadstarterAssistant: React.FC = () => {
       }
           } catch (error) {
         console.error('❌ Error with Vapi call:', error);
-        
-        // Provide more specific error messages
-        if (error instanceof Error) {
-          if (error.message.includes('401')) {
-            setLastMessage("Authentication failed. Please check your Vapi API key in .env.local");
-          } else if (error.message.includes('404')) {
-            setLastMessage("Assistant not found. Please check your assistant ID in .env.local");
-          } else {
-            setLastMessage(`Connection error: ${error.message}`);
-          }
-        } else {
-          setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
-        }
       } finally {
       // Remove click animation
       setTimeout(() => {
@@ -215,7 +195,7 @@ const HeadstarterAssistant: React.FC = () => {
 
           {/* Title */}
           <h1 className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-[0_0_20px_rgba(0,255,200,0.5)] tracking-tight">
-            Headstarter Assistant
+            Aven Assistant
           </h1>
           
           {/* Subtitle */}
@@ -256,32 +236,28 @@ const HeadstarterAssistant: React.FC = () => {
             </div>
           )}
           
+          {/* Voice Status */}
           {isCallActive && (
             <div className="mb-4 p-3 bg-cyan-400/10 rounded-lg border border-cyan-400/20">
               <div className="text-cyan-400 text-sm font-medium mb-2">
-                🎤 {isSpeaking ? 'Assistant Speaking...' : 'Listening...'}
+                🎤 {isSpeaking ? 'Suki Speaking...' : 'Listening...'}
               </div>
               {userTranscript && (
                 <div className="text-white/80 text-xs mb-2">
                   <strong>You:</strong> &ldquo;{userTranscript}&rdquo;
                 </div>
               )}
-              {assistantTranscript && (
-                <div className="text-white/80 text-xs">
-                  <strong>Assistant:</strong> &ldquo;{assistantTranscript}&rdquo;
-                </div>
-              )}
             </div>
           )}
 
-          {/* Last Response */}
-          {lastMessage && (
+          {/* Assistant Response */}
+          {assistantTranscript && (
             <div className="mb-4 p-3 bg-green-400/10 rounded-lg border border-green-400/20">
               <div className="text-green-400 text-sm font-medium mb-2">
-                💬 Response
+                💬 Suki
               </div>
               <div className="text-white/80 text-xs">
-                {lastMessage}
+                &ldquo;{assistantTranscript}&rdquo;
               </div>
             </div>
           )}
@@ -307,4 +283,4 @@ const HeadstarterAssistant: React.FC = () => {
   );
 };
 
-export default HeadstarterAssistant; 
+export default AvenAssistant; 

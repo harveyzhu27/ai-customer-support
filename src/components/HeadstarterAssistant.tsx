@@ -14,10 +14,8 @@ const HeadstarterAssistant: React.FC = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [status, setStatus] = useState<'ready' | 'connecting' | 'connected'>('ready');
   const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [lastMessage, setLastMessage] = useState('');
   const [transcript, setTranscript] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
   const [userTranscript, setUserTranscript] = useState('');
   const [assistantTranscript, setAssistantTranscript] = useState('');
   const [isCallActive, setIsCallActive] = useState(false);
@@ -30,17 +28,27 @@ const HeadstarterAssistant: React.FC = () => {
     // Only run on client side
     if (typeof window === 'undefined') return;
     
+    // Debug: Check environment variables
+    console.log('🔍 Environment Variables Check:');
+    console.log('NEXT_PUBLIC_VAPI_API_KEY:', process.env.NEXT_PUBLIC_VAPI_API_KEY ? '✅ Set' : '❌ Not set');
+    console.log('NEXT_PUBLIC_VAPI_ASSISTANT_ID:', process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID ? '✅ Set' : '❌ Not set');
+    
     const initVapi = async () => {
       try {
         // Import Vapi Web SDK
         const Vapi = (await import('@vapi-ai/web')).default;
         
-        // Initialize Vapi with your configuration
-        const vapi = new Vapi(process.env.NEXT_PUBLIC_VAPI_API_KEY || '');
+        // Check if API key is available
+        const apiKey = process.env.NEXT_PUBLIC_VAPI_API_KEY || '';
+        if (!apiKey) {
+          throw new Error('Vapi API key is not configured. Please check your .env.local file.');
+        }
         
-        // Set up event listeners
+        // Initialize Vapi with your configuration
+        const vapi = new Vapi(apiKey);
+        
+        // Set up event listeners based on official documentation
         vapi.on('call-start', () => {
-          setIsListening(true);
           setStatus('connected');
           setConnectionStatus('connected');
           setIsCallActive(true);
@@ -51,7 +59,6 @@ const HeadstarterAssistant: React.FC = () => {
         });
         
         vapi.on('call-end', () => {
-          setIsListening(false);
           setStatus('ready');
           setConnectionStatus('disconnected');
           setIsCallActive(false);
@@ -66,22 +73,26 @@ const HeadstarterAssistant: React.FC = () => {
           setIsSpeaking(false);
         });
         
-        vapi.on('message', (message: any) => {
-          if (message.role === 'user') {
-            setUserTranscript(message.content);
-            setTranscript(message.content);
-          } else if (message.role === 'assistant') {
-            setAssistantTranscript(message.content);
-            setLastMessage(message.content);
+        // Handle messages and transcripts
+        vapi.on('message', (message: { type: string; role: string; transcript: string }) => {
+          console.log('📨 Message received:', message);
+          
+          if (message.type === 'transcript') {
+            if (message.role === 'user') {
+              setUserTranscript(message.transcript);
+              setTranscript(message.transcript);
+            } else if (message.role === 'assistant') {
+              setAssistantTranscript(message.transcript);
+              setLastMessage(message.transcript);
+            }
           }
         });
         
-        vapi.on('error', (error: any) => {
+        vapi.on('error', (error: unknown) => {
           console.error('Vapi error:', error);
           setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
           setStatus('ready');
           setConnectionStatus('disconnected');
-          setIsListening(false);
           setIsCallActive(false);
         });
         
@@ -130,16 +141,37 @@ const HeadstarterAssistant: React.FC = () => {
       
       const vapi = (window as any).vapi;
       
+      // Check if assistant ID is configured
+      const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '';
+      if (!assistantId) {
+        setLastMessage("Assistant ID is not configured. Please check your .env.local file.");
+        return;
+      }
+      
       if (isCallActive) {
         // End the call if it's active
         vapi.stop();
       } else {
-        // Start a new call with your assistant
-        await vapi.start(process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID || '');
+        // Start a new call with your assistant ID
+        console.log('🎤 Starting call with assistant:', assistantId);
+        await vapi.start(assistantId);
       }
     } catch (error) {
       console.error('❌ Error with Vapi call:', error);
-      setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          setLastMessage("Authentication failed. Please check your Vapi API key in .env.local");
+        } else if (error.message.includes('404')) {
+          setLastMessage("Assistant not found. Please check your assistant ID in .env.local");
+        } else {
+          setLastMessage(`Connection error: ${error.message}`);
+        }
+      } else {
+        setLastMessage("I'm sorry, there was an error with the voice connection. Please try again.");
+      }
+      
       setStatus('ready');
     } finally {
       // Remove click animation
@@ -238,12 +270,12 @@ const HeadstarterAssistant: React.FC = () => {
               </div>
               {userTranscript && (
                 <div className="text-white/80 text-xs mb-2">
-                  <strong>You:</strong> "{userTranscript}"
+                  <strong>You:</strong> &ldquo;{userTranscript}&rdquo;
                 </div>
               )}
               {assistantTranscript && (
                 <div className="text-white/80 text-xs">
-                  <strong>Assistant:</strong> "{assistantTranscript}"
+                  <strong>Assistant:</strong> &ldquo;{assistantTranscript}&rdquo;
                 </div>
               )}
             </div>

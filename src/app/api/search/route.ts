@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       input: query,
     });
 
-    const queryEmbedding = embeddingResponse.data[0].embedding;
+    const queryEmbedding = embeddingResponse.data[0]?.embedding;
 
     // 2. Search Pinecone for similar questions
     const index = pinecone.index('aven-faq');
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // 3. Prepare context from top matches
     const context = searchResponse.matches
       .map(match => {
-        const metadata = match.metadata as any;
+        const metadata = match.metadata as { question: string; answer: string };
         return `Question: ${metadata.question}\nAnswer: ${metadata.answer}`;
       })
       .join('\n\n');
@@ -84,8 +84,8 @@ Guidelines:
 
     // 5. Prepare sources for reference
     const sources = searchResponse.matches.map(match => ({
-      question: (match.metadata as any).question,
-      section: (match.metadata as any).section,
+      question: (match.metadata as { question: string; section?: string }).question,
+      section: (match.metadata as { question: string; section?: string }).section,
       score: match.score
     }));
 

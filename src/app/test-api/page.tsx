@@ -4,7 +4,12 @@ import { useState } from 'react';
 
 export default function TestAPIPage() {
   const [query, setQuery] = useState('');
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<{
+    answer: string;
+    confidence: number;
+    sources: Array<{ question: string; section?: string; score: number }>;
+    query: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -164,7 +169,7 @@ export default function TestAPIPage() {
                 <div>
                   <h4 className="text-white font-medium mb-2">Sources:</h4>
                   <div className="space-y-2">
-                    {response.sources.map((source: any, index: number) => (
+                    {response.sources.map((source, index: number) => (
                       <div key={index} className="bg-white/5 rounded p-3">
                         <p className="text-white/80 text-sm">
                           <strong>Question:</strong> {source.question}

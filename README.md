@@ -1,67 +1,64 @@
-# Next.js Template
+# AI Customer Support App
 
-This is a template repository showcasing Next.js Server Actions, React Server Components, and modern data fetching patterns. The project includes a Todo list implementation and examples of API integration with proper loading states and error handling.
+A **full-stack AI customer support platform** that combines **real-time voice AI**, **semantic search**, and **context-aware responses** to deliver intelligent and interactive support experiences.  
+Built with **Next.js 15**, **TypeScript**, **Vapi AI**, **OpenAI**, and **Pinecone**, the app integrates voice calls, embeddings-based search, and modern UI for seamless support interactions.
 
-## Features
+---
 
-- **Todo List**: Server-side data mutations using Next.js Server Actions
-- **Data Fetching Example**: Demonstrates React Suspense and loading states
-- **Modern UI**: Built with Shadcn UI components and Tailwind CSS
-- **Error Handling**: Proper error boundaries and user feedback
-- **Type Safety**: Full TypeScript support
+## 🚀 Features
 
-## Tech Stack
+### 1. Real-Time Voice AI
+- **Voice calls in the browser** using **Vapi AI Web SDK**
+- **Live transcription** for both user and assistant dialogue
+- **Voice synthesis** for AI responses
+- **Connection management** with visual feedback and error handling
 
-- [Next.js](https://nextjs.org) - React framework
-- [Shadcn UI](https://ui.shadcn.com/) - Component library
-- [Tailwind CSS](https://tailwindcss.com) - Styling
-- [TypeScript](https://www.typescriptlang.org/) - Type safety
+### 2. Semantic Search API
+- **Vector search** using **OpenAI embeddings** + **Pinecone vector database**
+- **Context-aware responses** with **GPT-3.5-turbo**
+- **Confidence scoring** and **source attribution** for answers
+- **Next.js API routes** for query processing and data retrieval
 
-## Getting Started
+### 3. Data Ingestion & Processing
+- **Web scraping** (Selenium + BeautifulSoup) for FAQ and support data
+- **Vector embeddings** stored in Pinecone for fast similarity search
+- **Metadata management** for source tracking and contextual responses
 
-1. Clone the repository
-2. Install dependencies:
+---
+
+## 🛠️ Tech Stack
+
+**Frontend**  
+- Next.js 15 + React 19 + TypeScript  
+- Tailwind CSS + Shadcn UI + Lucide React  
+- Framer Motion for animations  
+
+**Backend & AI**  
+- Next.js API Routes for serverless endpoints  
+- OpenAI API for NLP and response generation  
+- Pinecone vector database for semantic search  
+- Vapi AI for real-time voice calls and transcription  
+
+**Other Tools**  
+- Node.js runtime  
+- ESLint + Prettier for clean code  
+- Turbopack for fast development builds  
+
+---
+
+## 📦 Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/ai-customer-support-app.git
+cd ai-customer-support-app
+
+# Install dependencies
 npm install
-# or
-yarn install
-# or
-pnpm install
-```
 
-3. Set up your environment variables in the `.env` file.
+# Set up environment variables
+cp .env.example .env.local
+# Add API keys for OpenAI, Vapi, and Pinecone
 
-4. Start the development server:
-
-```bash
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
-
-## Project Structure
-
-- `app/page.tsx` - Main page with Todo list implementation
-- `app/example/page.tsx` - Data fetching example with loading states
-- `app/actions/*` - Server Actions for data mutations
-- `components/ui/*` - Shadcn UI components
-
-## Learn More
-
-To learn more about the technologies used in this project:
-
-- [Next.js Documentation](https://nextjs.org/docs) - Next.js features and API
-- [Server Actions](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions) - Learn about Next.js Server Actions
-- [Shadcn UI Documentation](https://ui.shadcn.com) - Learn about Shadcn UI components
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs) - Learn about Tailwind CSS
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
-
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
